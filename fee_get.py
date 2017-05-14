@@ -1,39 +1,69 @@
 # -*- coding: utf-8 -*-
 
+import json
 import requests
-# from bs4 import BeautifulSoup
 import lxml.html
-from mailsend import mailsend
+from mailsend import *
+
 
 def main():
 
     url = "http://202.120.163.129:88/"
 
-    threshold = 10
+    fee_threshold = 1.0
 
-    user_agent = 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36'
-    form_data = {
-        "__VIEWSTATE": "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",
-        "__VIEWSTATEGENERATOR": "CA0B0334",
-        "drlouming": "7",
-        "drceng": "425",
-        "dr_ceng": "460",
-        "drfangjian": "482",
-        "radio": "usedR",
-        "ImageButton1.x": "59",
-        "ImageButton1.y": "6"
-    }
+    print('[INFO] read TEB_config.json ...')
+    with open("TEB_config.json", "r") as f:
+        text = f.read()
+    json_data = json.loads(text)
+    print('[INFO] read succesful ...')
 
-    headers = {'User-Agent': user_agent}
+    headers = {'User-Agent': json_data['user_agent']}
 
-    r = requests.post(url, headers=headers, data=form_data)
-    page = lxml.html.document_fromstring(r.text)
-    fee = float(page.xpath("//span[@class='number orange']/text()")[0])
+    mailserver_username = json_data['mailserver_username']  # 发送提醒邮件的邮箱
+    mailserver_password = json_data['mailserver_password']  # 发送提醒邮件邮箱的密码
+    mailserver_smtp = json_data['mailserver_smtp']  # 发送邮箱的SMPT服务器地址
 
-    print("电费还剩：" + str(fee))
-    if fee < threshold:
-        mailsend(fee)
+    for room in json_data['clientroom']:
+        form_data = json_data['clientroom'][room]['form_data']
+        mailclient = json_data['clientroom'][room]['mailclient']
 
+        r = requests.post(url, headers=headers, data=form_data)
+        page = lxml.html.document_fromstring(r.text)
+        fee = float(page.xpath("//span[@class='number orange']/text()")[0])
+
+        print(" 嘉定" + " 校区  " + str(room)[-4]
+              + " 号楼  " + str(room)[-3:] + " 房间 " + " 电费还剩：" + str(fee))
+
+        regular_mailclient = [to_addr for [to_addr, isRegular] in mailclient.items() if isRegular]
+
+        if  regular_mailclient:
+            print('[INFO] Send mail to regular receiver: ' + str(regular_mailclient))
+
+            regularMailSend(mailserver_username=mailserver_username,
+                            mailserver_password=mailserver_password,
+                            mailserver_smtp=mailserver_smtp,
+                            mailclient=regular_mailclient,
+                            clientroom=room,
+                            fee=fee)
+
+        else:
+            print('[INFO] No regular receiver!')
+
+        lowfee_mailclient = [to_addr for [to_addr, isRegular] in mailclient.items() if not isRegular]
+
+        if lowfee_mailclient:
+            
+            if fee < fee_threshold:
+                print('[INFO] send mail to lowfee receiver' + str(lowfee_mailclient))
+                lowfeeMailSend(mailserver_username=mailserver_username,
+                               mailserver_password=mailserver_password,
+                               mailserver_smtp=mailserver_smtp,
+                               mailclient=lowfee_mailclient,
+                               clientroom=room,
+                               fee=fee)
+        else:
+            print('[INFO] No lowfee receiver!')
 
 if __name__ == '__main__':
     main()
