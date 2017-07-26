@@ -137,3 +137,6 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# custom 
+TEB_config.json

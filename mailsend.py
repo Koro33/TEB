@@ -8,11 +8,17 @@ from email.utils import parseaddr, formataddr
 
 
 def _format_addr(s):
+    '''
+    邮件内容的重新编码
+    '''
     name, addr = parseaddr(s)
     return formataddr((Header(name, 'utf-8').encode(), addr))
 
 
 def TEB_Info_to_mailsend_Info(TEB_Info):
+    '''
+    从 TEB_Info 中获取常态(regular)发送名单和低电费(lowfee)发送名单
+    '''
     regular_info = []
     lowfee_info = []
     for room in TEB_Info:
@@ -35,6 +41,10 @@ def TEB_Info_to_mailsend_Info(TEB_Info):
 
 
 def mailSend(TEB_Info, admin_MailInfo):
+    '''
+    发送邮件，每一封都开服务单独发送
+    (low method)
+    '''
     regular_info, lowfee_info = TEB_Info_to_mailsend_Info(TEB_Info)
     if regular_info:
         print('[INFO] Send mail to regular receiver: ' + ' \n')
@@ -55,7 +65,7 @@ def mailSend(TEB_Info, admin_MailInfo):
 
 def regularMailSend(mailsend_Info, admin_MailInfo):
     '''
-
+    常态邮件发送函数
     '''
     from_addr = admin_MailInfo['mailserver_username']
     password = admin_MailInfo['mailserver_password']
@@ -81,7 +91,7 @@ def regularMailSend(mailsend_Info, admin_MailInfo):
     msg['Subject'] = Header(msg_subject, 'utf-8').encode()
 
     server = smtplib.SMTP(smtp_server, 25)
-    server.set_debuglevel(1)
+    server.set_debuglevel(0)
     server.login(from_addr, password)
     try:
         server.sendmail(from_addr, to_addr, msg.as_string())
@@ -90,7 +100,9 @@ def regularMailSend(mailsend_Info, admin_MailInfo):
 
 
 def lowfeeMailSend(mailsend_Info, admin_MailInfo):
-
+    '''
+    低费用邮件发送函数
+    '''
     from_addr = admin_MailInfo['mailserver_username']
     password = admin_MailInfo['mailserver_password']
     smtp_server = admin_MailInfo['mailserver_smtp']
@@ -108,7 +120,6 @@ def lowfeeMailSend(mailsend_Info, admin_MailInfo):
     msg_to = ", ".join(map(lambda to_addr: formataddr(
         (Header("慵懒的管理员", 'utf-8').encode(), to_addr)), to_addr))
     msg_subject = '[RPI_TEB]又没电了(╯°Д°)╯︵ ┻━┻'
-    # msg_subject = '[RPI_TEB]电费报告...'
 
     msg = MIMEText(body, 'plain', 'utf-8')
     msg['From'] = msg_from
@@ -116,7 +127,41 @@ def lowfeeMailSend(mailsend_Info, admin_MailInfo):
     msg['Subject'] = Header(msg_subject, 'utf-8').encode()
 
     server = smtplib.SMTP(smtp_server, 25)
-    server.set_debuglevel(1)
+    server.set_debuglevel(0)
+    server.login(from_addr, password)
+    try:
+        server.sendmail(from_addr, to_addr, msg.as_string())
+    finally:
+        server.quit()
+
+
+def adminMailSend(admin_MailInfo, admin_MailMsg):
+    '''
+    管理员管理邮件发送函数
+    '''
+    from_addr = admin_MailInfo['mailserver_username']
+    password = admin_MailInfo['mailserver_password']
+    smtp_server = admin_MailInfo['mailserver_smtp']
+    to_addr = admin_MailInfo['admin_mailaddr']
+    # to_addr应该是被逗号分割的字符串，不能是list
+
+    body = ''
+    for Msg in admin_MailMsg:
+        body = body + Msg + '\n'
+        
+    msg_from = ",".join(map(lambda from_addr: formataddr(
+        (Header("勤奋的Robot", 'utf-8').encode(), from_addr)), [from_addr]))
+    msg_to = ",".join(map(lambda to_addr: formataddr(
+        (Header("慵懒的管理员", 'utf-8').encode(), to_addr)), to_addr))
+    msg_subject = '[RPI_TEB]电费报告(admin)...'
+
+    msg = MIMEText(body, 'plain', 'utf-8')
+    msg['From'] = msg_from
+    msg['To'] = msg_to
+    msg['Subject'] = Header(msg_subject, 'utf-8').encode()
+
+    server = smtplib.SMTP(smtp_server, 25)
+    server.set_debuglevel(0)
     server.login(from_addr, password)
     try:
         server.sendmail(from_addr, to_addr, msg.as_string())

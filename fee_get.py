@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-import os
-import time
 import requests
 import lxml.html
 from mailsend import *
@@ -10,7 +8,7 @@ from mailsend import *
 
 def TEB_readfromjson(mode=0):
     '''
-    >>> read information from json files
+    read information from json files  
     mode=0: RELEASE  
     mode=1: DEBUG
     '''
@@ -42,8 +40,10 @@ def TEB_readfromjson(mode=0):
 
 def TEB_getFeeFromPage(url, headers, form_data):
     '''
-    return (float)fee
+    return (float)fee  
+    (slow method)
     '''
+    # post 模板
     form_data_post = {
         "__VIEWSTATE": "",
         "__VIEWSTATEGENERATOR": "",
@@ -55,9 +55,8 @@ def TEB_getFeeFromPage(url, headers, form_data):
         "ImageButton1.x": "",
         "ImageButton1.y": ""
     }
-    # TEBsess = requests.session()
+    # 创建 requests 会话
     with requests.Session() as TEBsess:
-
         r = TEBsess.get(url, headers=headers, timeout=5)  # 第1次 post
         page = lxml.html.document_fromstring(r.text)
         VIEWSTATE = page.xpath("//input[@name='__VIEWSTATE']/@value")
@@ -103,7 +102,7 @@ def TEB_getFeeFromPage(url, headers, form_data):
         r = TEBsess.post(url, headers=headers,
                          data=form_data_post, timeout=5)  # 第5次 post
     page = lxml.html.document_fromstring(r.text)
-
+    # xpath 方法筛选
     fee = float(page.xpath("//span[@class='number orange']/text()")[0])
 
     return fee
@@ -112,6 +111,7 @@ def TEB_getFeeFromPage(url, headers, form_data):
 def TEB_getInfo(TEB_jsonData):
     '''
     return: 
+    >>> `TEB_Info`
     {'1_8_307': {
         'mailclient': {
             '******@qq.com': 0,
@@ -120,16 +120,20 @@ def TEB_getInfo(TEB_jsonData):
         'Fee': 3.39
     }
     }
+    >>> `admin_MailInfo`
+    mailserver_username = TEB_jsonData['mailserver_username']  # 发送提醒邮件的邮箱
+    mailserver_password = TEB_jsonData['mailserver_password']  # 发送提醒邮件邮箱的密码
+    mailserver_smtp = TEB_jsonData['mailserver_smtp']  # 发送邮箱的SMTP服务器地址
+    admin_mail = TEB_jsonData['admin_mailaddr']  # 管理员邮箱
+
+    >>> `admin_MailMsg`
+    [嘉定校区 8 号楼 321 房间 电费还剩 50.2, 嘉定校区 9 号楼 322 房间 电费还剩 50.2]
     '''
     TEB_Info = {}
     admin_MailMsg = []
     url = TEB_jsonData['target_url']
     headers = TEB_jsonData['headers']
 
-    # mailserver_username = TEB_jsonData['mailserver_username']  # 发送提醒邮件的邮箱
-    # mailserver_password = TEB_jsonData['mailserver_password']  # 发送提醒邮件邮箱的密码
-    # mailserver_smtp = TEB_jsonData['mailserver_smtp']  # 发送邮箱的SMPT服务器地址
-    # admin_mail = TEB_jsonData['admin_mailaddr']  # 管理员邮箱
     subkey = ['mailserver_username', 'mailserver_password',
               'mailserver_smtp', 'admin_mailaddr']
     admin_MailInfo = {key: TEB_jsonData[key] for key in subkey}
@@ -138,7 +142,9 @@ def TEB_getInfo(TEB_jsonData):
         alarm_threshold = TEB_jsonData['clientroom'][room]['alarm_threshold']
         form_data = TEB_jsonData['clientroom'][room]['form_data']
         mailclient = TEB_jsonData['clientroom'][room]['client_mailaddr']
+
         fee = TEB_getFeeFromPage(url, headers, form_data)
+
         TEB_Info[room] = {'Fee': fee, 'mailclient': mailclient,
                           'alarm_threshold': alarm_threshold}
         roominfo = room.split('_')
@@ -150,35 +156,24 @@ def TEB_getInfo(TEB_jsonData):
     return TEB_Info, admin_MailInfo, admin_MailMsg
 
 
-def TEB_Info_log():
-    '''
-
-    '''
-    localtime = time.localtime()
-    print(time.strftime('%Y-%m-%d %H:%M:%S', localtime))
-    return
-
-
-def send_adminmail(admin_MailInfo, admin_MailMsg):
-
-    return
-
-
 def main():
     '''
-
+    主函数
     '''
     TEB_jsonData = TEB_readfromjson(mode=0)  # 从json文件中读取条目
-    TEB_Info,  admin_MailInfo, admin_MailMsg = TEB_getInfo(TEB_jsonData)
+    TEB_Info, admin_MailInfo, admin_MailMsg = TEB_getInfo(TEB_jsonData)  # 重新组合数据
 
-    print(TEB_Info)
-    print(admin_MailInfo)
-    print(admin_MailMsg)
+    # print(TEB_Info)
+    # print(admin_MailInfo)
+    # print(admin_MailMsg)
 
-    regular_info, lowfee_info = TEB_Info_to_mailsend_Info(TEB_Info)
-    print(regular_info)
-    print(lowfee_info)
+    # regular_info, lowfee_info = TEB_Info_to_mailsend_Info(TEB_Info)
+    # print(regular_info)
+    # print(lowfee_info)
+
     mailSend(TEB_Info, admin_MailInfo)
+
+    # adminMailSend(admin_MailInfo, admin_MailMsg)
 
 
 if __name__ == '__main__':
